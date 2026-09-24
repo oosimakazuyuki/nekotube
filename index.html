@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ネコチューブ - 学校パソコン対応版</title>
+    <title>ネコチューブ - 100%動く最終版</title>
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }
         .box { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
@@ -17,11 +17,11 @@
 </head>
 <body>
 
-<h1>🐈‍⬛ NekoTube (普通に動く安心版)</h1>
+<h1>🐈‍⬛ NekoTube (超シンプル動作保証版)</h1>
 
 <!-- 📢 お知らせ -->
 <div class="box" style="border-left: 4px solid #58a6ff;">
-    <strong>📢 お知らせ:</strong> <span id="newsText">サイトがオープンしました！</span>
+    <strong>📢 お知らせ:</strong> <span id="newsText">学校のパソコンでも絶対に動くモードで起動中！</span>
 </div>
 
 <!-- 🔑 ログインエリア -->
@@ -43,18 +43,20 @@
             <h3>🚀 2. 動画を投稿する</h3>
             <input type="text" id="vTitle" placeholder="動画の名前（タイトル）"><br>
             <textarea id="vDesc" placeholder="動画の説明文"></textarea><br>
-            <input type="text" id="vUrl" placeholder="動画ファイルのURL（OneDriveなどの共有リンク）"><br>
+            <p style="font-size:12px; color:#8b949e; margin:0;">下に動画のURLを貼るか、すぐ下のボタンからファイルを選んでね！</p>
+            <input type="text" id="vUrl" placeholder="動画のURL（空欄でもOK）"><br>
+            <input type="file" id="vFile" accept="video/*"><br><br>
             <button onclick="addVideo()">タイムラインに投稿</button>
         </div>
 
         <!-- 📺 動画一覧 -->
         <div class="box">
             <h3>📺 投稿された動画一覧</h3>
-            <div id="timeline">まだ動画がありません</div>
+            <div id="timeline">ここに投稿した動画が表示されます</div>
         </div>
     </div>
 
-    <!-- 右側：管理者＆Scratch案内 -->
+    <!-- 右側：管理者＆お問い合わせ -->
     <div>
         <div class="box">
             <h3>🛠️ 管理者機能</h3>
@@ -79,51 +81,18 @@
 </div>
 
 <script>
-    // --- データの保存箱（学校制限をすり抜けるローカル保存） ---
-    var videoList = JSON.parse(localStorage.getItem('n_videos')) || [];
-    var blockedList = JSON.parse(localStorage.getItem('n_blocked')) || [];
-    var savedNews = localStorage.getItem('n_news') || "サイトがオープンしました！";
-    var loginUser = localStorage.getItem('n_user') || "";
-    var forbiddenWords = ["あほ", "バカ", "死ね"]; // 🤬 禁止ワード
+    // 完全にブラウザの一時メモリだけで動かす（学校のブロック対策）
+    var videoList = [];
+    var blockedList = [];
+    var loginUser = "";
+    var forbiddenWords = ["あほ", "バカ", "死ね"];
 
-    // ページが開いたときの処理
-    window.onload = function() {
-        document.getElementById('newsText').innerHTML = savedNews;
-        if(loginUser) {
-            checkLoginState();
-        }
-        showVideos();
-        showBlockedUsers();
-    };
-
-    // ログイン
     function userLogin() {
         var name = document.getElementById('usernameInput').value;
         if(!name) { alert('名前を入力してください！'); return; }
-        
-        if(blockedList.indexOf(name) !== -1) {
-            alert('🚫 あなたの名前は管理者によってブロックされています！');
-            return;
-        }
+        if(blockedList.indexOf(name) !== -1) { alert('🚫 あなたの名前はブロックされています！'); return; }
 
         loginUser = name;
-        localStorage.setItem('n_user', name);
-        checkLoginState();
-        showVideos();
-    }
-
-    // ログアウト
-    function userLogout() {
-        loginUser = "";
-        localStorage.removeItem('n_user');
-        document.getElementById('userBadge').style.display = 'none';
-        document.getElementById('loginArea').style.display = 'block';
-        document.getElementById('adminPanel').style.display = 'none';
-        showVideos();
-    }
-
-    // ログイン状態のチェックと管理者画面の表示
-    function checkLoginState() {
         document.getElementById('loginArea').style.display = 'none';
         document.getElementById('userBadge').style.display = 'block';
         document.getElementById('currentUserName').innerHTML = loginUser;
@@ -131,17 +100,31 @@
         if(loginUser === "管理者" || loginUser === "admin") {
             document.getElementById('adminPanel').style.display = 'block';
         }
+        showVideos();
     }
 
-    // 動画を投稿する
+    function userLogout() {
+        loginUser = "";
+        document.getElementById('userBadge').style.display = 'none';
+        document.getElementById('loginArea').style.display = 'block';
+        document.getElementById('adminPanel').style.display = 'none';
+        showVideos();
+    }
+
     function addVideo() {
         if(!loginUser) { alert('先にログインしてください！'); return; }
         
         var title = document.getElementById('vTitle').value;
         var desc = document.getElementById('vDesc').value;
         var url = document.getElementById('vUrl').value;
+        var fileInput = document.getElementById('vFile');
 
-        if(!title || !url) { alert('タイトルと動画URLを入力してください！'); return; }
+        // ファイルが選択されている場合はそのファイルを擬似URLにする
+        if (fileInput.files.length > 0) {
+            url = URL.createObjectURL(fileInput.files[0]);
+        }
+
+        if(!title || !url) { alert('タイトルと、URL入力またはファイル選択をしてください！'); return; }
 
         var newVideo = {
             id: new Date().getTime(),
@@ -154,18 +137,16 @@
         };
 
         videoList.unshift(newVideo);
-        localStorage.setItem('n_videos', JSON.stringify(videoList));
         
-        // 入力欄を空にする
         document.getElementById('vTitle').value = '';
         document.getElementById('vDesc').value = '';
         document.getElementById('vUrl').value = '';
+        fileInput.value = '';
         
         alert('🎉 投稿しました！');
         showVideos();
     }
 
-    // 動画一覧を表示する（視聴数・コメントもここで処理）
     function showVideos() {
         var timeline = document.getElementById('timeline');
         timeline.innerHTML = '';
@@ -177,11 +158,8 @@
 
         for(var i = 0; i < videoList.length; i++) {
             var video = videoList[i];
-
-            // ブロックされた人の動画は見せない
             if(blockedList.indexOf(video.author) !== -1) { continue; }
 
-            // コメントの文字を作る
             var commentHtml = '';
             for(var j = 0; j < video.comments.length; j++) {
                 commentHtml += '<div class="comment-item"><strong>' + video.comments[j].user + ':</strong> ' + video.comments[j].text + '</div>';
@@ -192,12 +170,9 @@
             card.innerHTML = 
                 '<h2>' + video.title + '</h2>' +
                 '<p style="font-size:12px; color:#8b949e;">投稿者: ' + video.author + '</p>' +
-                '<!-- 動画プレイヤー -->' +
                 '<video class="video-frame" src="' + video.url + '" controls onplay="countView(' + video.id + ')"></video>' +
-                '<p>👁️ 視聴数: ' + video.views + ' 回</p>' +
+                '<p>👁️ 視聴数: <span id="v-view-' + video.id + '">' + video.views + '</span> 回</p>' +
                 '<p style="background:#0d1117; padding:10px; border-radius:4px;">説明: ' + video.desc + '</p>' +
-                
-                '<!-- コメント入力 -->' +
                 '<div style="margin-top:10px;">' +
                     '<input type="text" id="c-input-' + video.id + '" placeholder="コメントを入力..." style="width:70%;">' +
                     '<button onclick="addComment(' + video.id + ')" style="padding:5px 10px; margin-left:5px;">送信</button>' +
@@ -208,26 +183,22 @@
         }
     }
 
-    // 視聴数を記録する（再生ボタンが押されたら動く）
     function countView(id) {
         for(var i = 0; i < videoList.length; i++) {
             if(videoList[i].id === id) {
                 videoList[i].views += 1;
-                localStorage.setItem('n_videos', JSON.stringify(videoList));
-                showVideos();
+                document.getElementById('v-view-' + id).innerHTML = videoList[i].views;
                 break;
             }
         }
     }
 
-    // コメントを投稿する（禁止ワード対応）
     function addComment(id) {
         if(!loginUser) { alert('ログインしてください！'); return; }
         var input = document.getElementById('c-input-' + id);
         var text = input.value;
         if(!text) return;
 
-        // 🤬 禁止ワードのチェック（伏せ字にする）
         for(var i = 0; i < forbiddenWords.length; i++) {
             if(text.indexOf(forbiddenWords[i]) !== -1) {
                 alert('⚠️ 不適切な言葉が含まれているため、伏せ字になります');
@@ -237,11 +208,7 @@
 
         for(var i = 0; i < videoList.length; i++) {
             if(videoList[i].id === id) {
-                videoList[i].comments.push({
-                    user: loginUser,
-                    text: text
-                });
-                localStorage.setItem('n_videos', JSON.stringify(videoList));
+                videoList[i].comments.push({ user: loginUser, text: text });
                 input.value = '';
                 showVideos();
                 break;
@@ -249,19 +216,24 @@
         }
     }
 
-    // 【管理者】お知らせ変更
     function changeNews() {
         var text = document.getElementById('newNewsText').value;
         if(!text) return;
-        savedNews = text;
-        localStorage.setItem('n_news', text);
         document.getElementById('newsText').innerHTML = text;
         alert('お知らせを変更しました！');
     }
 
-    // 【管理者】ユーザーブロック
     function blockUser() {
         var name = document.getElementById('blockTarget').value;
         if(!name) return;
         if(blockedList.indexOf(name) === -1) {
             blockedList.push(name);
+            alert(name + ' をアクセスブロックしました！');
+            document.getElementById('blockTarget').value = '';
+            document.getElementById('blockList').innerHTML = "ブロック中: " + blockedList.join(', ');
+            showVideos();
+        }
+    }
+</script>
+</body>
+</html>
