@@ -2,155 +2,147 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NekoTube Premium - プロキシ対応版</title>
+    <title>ネコチューブ - プロキシ専用・完全永久保存版</title>
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; margin: 0; }
-        .container { max-width: 800px; margin: 0 auto; }
+        body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }
         .box { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0; background: #0d1117; color: white; border: 1px solid #30363d; border-radius: 4px; box-sizing: border-box; }
-        button { background: #238636; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        input, textarea { width: 95%; padding: 10px; margin: 5px 0; background: #0d1117; color: white; border: 1px solid #30363d; border-radius: 4px; box-sizing: border-box; }
+        button { background: #238636; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button:hover { background: #2ea44f; }
-        .video-card { background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 25px; }
-        .video-frame { width: 100%; aspect-ratio: 16/9; background: black; border-radius: 6px; margin: 10px 0; }
-        .comment-area { margin-top: 15px; border-top: 1px solid #30363d; padding-top: 15px; }
-        .comment-item { background: #21262d; padding: 8px; margin-top: 5px; border-radius: 4px; font-size: 14px; border-left: 3px solid #58a6ff; }
-        .flex { display: flex; gap: 10px; }
+        .video-card { background: #21262d; padding: 15px; border-radius: 6px; margin-top: 15px; border: 1px solid #30363d; }
+        .video-frame { width: 100%; aspect-ratio: 16/9; background: black; border-radius: 4px; margin: 10px 0; }
+        .comment-item { background: #161b22; padding: 5px 10px; margin-top: 5px; border-radius: 4px; font-size: 14px; }
+        .form-group { margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🐈‍⬛ NekoTube Share (Supabase連携版)</h1>
+<h1>🐈‍⬛ NekoTube (永久保存・プロキシ対応版)</h1>
 
-    <!-- 🔑 ユーザー名・パスワードログインエリア -->
-    <div class="box" id="authArea">
-        <h3>🔐 アカウント認証（ログイン / 新規登録）</h3>
-        <p style="font-size:12px; color:#8b949e;">※初めて使う名前の場合は、自動的にそのパスワードで新規会員登録されます！</p>
-        <input type="text" id="usernameInput" placeholder="ユーザー名を入力...">
-        <input type="password" id="passwordInput" placeholder="パスワードを入力...">
-        <button onclick="handleAuth()">ログイン / アカウント作成</button>
-    </div>
-
-    <div class="box" id="userStatus" style="display:none;">
-        👤 ログイン中: <strong id="currentUserName" style="color:#58a6ff;">ゲスト</strong>
-        <button onclick="logout()" style="background:#30363d; width:auto; padding:5px 10px; float:right; margin:0;">ログアウト</button>
-        <div style="clear:both;"></div>
-    </div>
-
-    <!-- 🚀 本当に共有できる動画投稿エリア -->
-    <div class="box" id="uploadArea" style="display:none;">
-        <h3>🚀 新しい動画をタイムラインに共有する</h3>
-        <input type="text" id="vTitle" placeholder="動画のタイトル">
-        <textarea id="vDesc" placeholder="動画の説明文"></textarea>
-        <input type="text" id="vUrl" placeholder="動画ファイルの直リンクURL (mp4など)">
-        <button onclick="uploadVideo()">世界へ投稿する（永久保存）</button>
-    </div>
-
-    <!-- 📺 本物の同期タイムライン -->
-    <h3>📺 みんなが投稿した動画</h3>
-    <div id="timeline">データベースから動画を読み込み中...</div>
+<!-- 🔑 1. ログイン・サインアップエリア -->
+<div class="box" id="authArea">
+    <h3>👤 アカウント作成 / ログイン</h3>
+    <input type="text" id="usernameInput" placeholder="ユーザー名"><br>
+    <input type="password" id="passwordInput" placeholder="パスワード"><br>
+    <button onclick="handleAuth('login')">ログインする</button>
+    <button onclick="handleAuth('signup')" style="background:#007aff; margin-left:10px;">新しくアカウントを作る</button>
 </div>
 
-<!-- Supabaseのプログラムを読み込む（最新版） -->
+<div class="box" id="userBadge" style="display:none;">
+    👤 ログイン中: <strong id="currentUserName">ゲスト</strong>
+    <button onclick="userLogout()" style="background:#30363d; margin-left:10px;">ログアウト</button>
+</div>
+
+<!-- 🚀 2. 動画投稿フォーム（一番上に配置） -->
+<div class="box" id="uploadFormSection" style="border: 1px solid #58a6ff;">
+    <h3>🚀 新しい動画を共有する（投稿画面）</h3>
+    <p style="font-size:12px; color:#8b949e; margin-top:-5px;">ここに動画のタイトルや説明を入力して、みんなのタイムラインに表示させよう！</p>
+    
+    <div class="form-group">
+        <label style="font-weight:bold; color:#58a6ff;">① 動画の名前（タイトル）</label><br>
+        <input type="text" id="vTitle" placeholder="例：【神回】学校のPCで裏ワザやってみた動画">
+    </div>
+    
+    <div class="form-group">
+        <label style="font-weight:bold; color:#58a6ff;">② 動画の説明文</label><br>
+        <textarea id="vDesc" placeholder="例：プロキシを持ってる仲間だけが見れる秘密の動画です！バグ報告はScratchへ！" rows="3"></textarea>
+    </div>
+    
+    <div class="form-group">
+        <label style="font-weight:bold; color:#58a6ff;">③ 動画ファイルのURL</label><br>
+        <input type="text" id="vUrl" placeholder="例：OneDriveの共有リンクや、ネット上のmp4直リンク">
+    </div>
+    
+    <button onclick="addVideo()" style="width:100%; font-size:16px; padding:12px;">タイムラインに投稿する！</button>
+</div>
+
+<!-- 📺 3. みんなの動画一覧（タイムライン） -->
+<div class="box">
+    <h3>📺 みんなの動画一覧</h3>
+    <div id="timeline">動画を読み込み中...</div>
+</div>
+
+<div class="box">
+    <h3>💬 お問い合わせ</h3>
+    <p style="font-size:13px;">バグ報告やリクエストは、@uoy-nohim-cojin」のコメント欄に送ってね！、、、あフォローすんな</p>
+</div>
+
+<!-- Supabaseの仕組みを読み込む -->
 <script src="https://jsdelivr.net"></script>
 <script>
-    // --- 【超重要】あなた専用のSupabase設定に書き換えてください ---
     const SUPABASE_URL = "https://supabase.co";
-    const SUPABASE_KEY = "sb_publishable_T-XxE7OtWrUrxZcu4H6IhA_d-aoawd7";
+    // 🔑 さっきコピーした「anon publicキー」を下の "" の中に貼り付けてください！
+    const SUPABASE_KEY = "sb_publishable_T-XxE7OtWrUrxZcu4H6IhA_d-aoawd7"; 
     
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let loginUser = localStorage.getItem('nt_s_user') || "";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var loginUser = localStorage.getItem('n_user_sp') || "";
 
     window.onload = function() {
-        if(loginUser) { showLoggedInState(); }
-        loadVideos();
-        // 友達が投稿したら自動で画面が変わるリアルタイム監視
-        supabase.channel('custom-all-channel')
-            .on('postgres_changes', { event: '*', filter: 'table=eq.posts' }, loadVideos)
-            .subscribe();
+        if(loginUser) { checkLoginState(); }
+        showVideos();
     };
 
-    // 🔑 ユーザー名＋パスワード認証のロジック
-    async function handleAuth() {
-        const name = document.getElementById('usernameInput').value.trim();
-        const pass = document.getElementById('passwordInput').value.trim();
-        if(!name || !pass) return alert('ユーザー名とパスワードを入力してください！');
+    // アカウント作成とログインの処理
+    async function handleAuth(type) {
+        var user = document.getElementById('usernameInput').value.trim();
+        var pass = document.getElementById('passwordInput').value.trim();
+        if(!user || !pass) return alert('ユーザー名とパスワードを入力してください！');
 
-        // データベースにそのユーザーがいるか確認
-        const { data: users, error } = await supabase.from('users').select('*').eq('username', name);
-        
-        if (users.length === 0) {
-            // いなければ新しいアカウントとして登録
-            await supabase.from('users').insert([{ username: name, password: pass }]);
-            alert('🎉 新規アカウントを作成し、ログインしました！');
+        if(type === 'signup') {
+            const { error } = await _supabase.from('users').insert([{ username: user, password: pass }]);
+            if(error) { alert('このユーザー名は既に使われているか、エラーが発生しました'); }
+            else { alert('🎉 アカウント作成成功！ログインしてください！'); }
         } else {
-            // いればパスワードが合っているか確認
-            if(users[0].password !== pass) {
-                alert('❌ パスワードが間違っています！別の名前を使うか正しく入力してください。');
-                return;
-            }
-            alert('🔓 ログインに成功しました！');
+            const { data, error } = await _supabase.from('users').select('*').eq('username', user).eq('password', pass);
+            if(data && data.length > 0) {
+                loginUser = user;
+                localStorage.setItem('n_user_sp', user);
+                checkLoginState();
+                showVideos();
+            } else { alert('ユーザー名かパスワードが違います！'); }
         }
-
-        loginUser = name;
-        localStorage.setItem('nt_s_user', name);
-        showLoggedInState();
-        loadVideos();
     }
 
-    function logout() {
+    function userLogout() {
         loginUser = "";
-        localStorage.removeItem('nt_s_user');
+        localStorage.removeItem('n_user_sp');
+        document.getElementById('userBadge').style.display = 'none';
         document.getElementById('authArea').style.display = 'block';
-        document.getElementById('userStatus').style.display = 'none';
-        document.getElementById('uploadArea').style.display = 'none';
-        loadVideos();
     }
 
-    function showLoggedInState() {
+    function checkLoginState() {
         document.getElementById('authArea').style.display = 'none';
-        document.getElementById('userStatus').style.display = 'block';
-        document.getElementById('uploadArea').style.display = 'block';
+        document.getElementById('userBadge').style.display = 'block';
         document.getElementById('currentUserName').innerHTML = loginUser;
     }
 
-    // 🚀 動画の本当の投稿処理
-    async function uploadVideo() {
-        const title = document.getElementById('vTitle').value.trim();
-        const desc = document.getElementById('vDesc').value.trim();
-        const url = document.getElementById('vUrl').value.trim();
+    // 動画をデータベースに投稿
+    async function addVideo() {
+        if(!loginUser) return alert('先にログインしてください！');
+        var title = document.getElementById('vTitle').value;
+        var desc = document.getElementById('vDesc').value;
+        var url = document.getElementById('vUrl').value;
+        if(!title || !url) return alert('タイトルとURLを入力してください！');
 
-        if(!title || !url) return alert('タイトルと動画URLは必須です！');
-
-        await supabase.from('posts').insert([
-            { title: title, desc: desc, url: url, author: loginUser, views: 0, comments: [] }
-        ]);
-
+        await _supabase.from('posts').insert([{ title: title, description: desc, url: url, author: loginUser }]);
         document.getElementById('vTitle').value = '';
         document.getElementById('vDesc').value = '';
         document.getElementById('vUrl').value = '';
-        alert('🎉 データベースに保存され、全員の画面へ同期されました！');
-        loadVideos();
+        alert('🎉 データベースに保存され、全員のタイムラインに投稿されました！');
+        showVideos();
     }
 
-    // 📺 データベースから全員の動画を読み込む処理
-    async function loadVideos() {
-        const { data: posts, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+    // データベースから全員の動画を読み込んで表示（バグ修正版）
+    async function showVideos() {
         var timeline = document.getElementById('timeline');
+        const { data: videos, error } = await _supabase.from('posts').select('*').order('created_at', { ascending: false });
+        
         timeline.innerHTML = '';
+        if(!videos || videos.length === 0) { timeline.innerHTML = 'まだ動画がありません'; return; }
 
-        if(!posts || posts.length === 0) {
-            timeline.innerHTML = 'まだ動画がありません';
-            return;
-        }
-
-        posts.forEach(video => {
-            var commentHtml = '';
-            const comments = video.comments || [];
-            comments.forEach(c => {
-                commentHtml += '<div class="comment-item"><strong>' + c.user + ':</strong> ' + c.text + '</div>';
-            });
+        for(var i = 0; i < videos.length; i++) {
+            var video = videos[i];
+            var commentHtml = (video.comments || []).map(c => `<div class="comment-item"><strong>${c.user}:</strong> ${c.text}</div>`).join('');
 
             var card = document.createElement('div');
             card.className = 'video-card';
@@ -159,49 +151,36 @@
                 '<p style="font-size:12px; color:#8b949e;">投稿者: ' + video.author + '</p>' +
                 '<video class="video-frame" src="' + video.url + '" controls onplay="countView(' + video.id + ', ' + video.views + ')"></video>' +
                 '<p>👁️ 視聴数: <span id="v-view-' + video.id + '">' + video.views + '</span> 回</p>' +
-                '<p style="background:#0d1117; padding:10px; border-radius:4px;">説明: ' + video.desc + '</p>' +
-                '<div class="comment-area">' +
-                    '<h4>💬 コメント</h4>' +
-                    '<div class="flex">' +
-                        '<input type="text" id="c-input-' + video.id + '" placeholder="コメントを入力..." ' + (loginUser ? '' : 'disabled') + '>' +
-                        '<button onclick="addComment(' + video.id + ')" style="width:80px; margin:0;" ' + (loginUser ? '' : 'disabled') + '>送信</button>' +
-                    '</div>' +
-                    '<div style="margin-top:10px;">' + commentHtml + '</div>' +
-                '</div>';
-
+                '<p style="background:#0d1117; padding:10px; border-radius:4px;">説明: ' + (video.description || '説明はありません') + '</p>' +
+                '<div style="margin-top:10px;">' +
+                    '<input type="text" id="c-input-' + video.id + '" placeholder="コメントを入力..." style="width:70%;">' +
+                    '<button onclick="addComment(' + video.id + ')" style="padding:5px 10px; margin-left:5px;">送信</button>' +
+                '</div>' +
+                '<div style="margin-top:10px;">' + commentHtml + '</div>';
             timeline.appendChild(card);
-        });
+        }
     }
 
-    // 👁️ 視聴数を本当にデータベースにプラス1する
+    // 視聴数の更新
     async function countView(id, currentViews) {
-        const videoElement = document.querySelector(`video[src]`);
-        // 擬似的に連続カウントを防ぐ処理
-        if(videoElement.dataset.counted === "true") return;
-        videoElement.dataset.counted = "true";
-
-        await supabase.from('posts').update({ views: currentViews + 1 }).eq('id', id);
+        await _supabase.from('posts').update({ views: currentViews + 1 }).eq('id', id);
         document.getElementById('v-view-' + id).innerHTML = currentViews + 1;
     }
 
-    // 💬 コメントを本当にデータベースの配列に追加して共有する
+    // コメントの保存
     async function addComment(id) {
-        if(!loginUser) return;
+        if(!loginUser) return alert('ログインしてください！');
         var input = document.getElementById('c-input-' + id);
-        var text = input.value.trim();
+        var text = input.value;
         if(!text) return;
 
-        // 今のコメントリストを取得
-        const { data } = await supabase.from('posts').select('comments').eq('id', id);
-        let currentComments = data[0].comments || [];
-        
-        // 新しいコメントを追加
+        const { data } = await _supabase.from('posts').select('comments').eq('id', id).single();
+        var currentComments = data.comments || [];
         currentComments.push({ user: loginUser, text: text });
 
-        // データベースを更新
-        await supabase.from('posts').update({ comments: currentComments }).eq('id', id);
+        await _supabase.from('posts').update({ comments: currentComments }).eq('id', id);
         input.value = '';
-        loadVideos();
+        showVideos();
     }
 </script>
 </body>
