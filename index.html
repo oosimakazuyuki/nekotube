@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ネコチューブ - ねこすけ管理人エディション</title>
+    <title>ネコチューブ - 動画クリエイタープラットフォーム</title>
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }
         .box { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
@@ -15,23 +15,23 @@
         .form-group { margin-bottom: 15px; }
         .alert-text { background: rgba(88, 166, 255, 0.1); color: #58a6ff; padding: 10px; border-radius: 6px; font-size: 13px; margin: 10px 0; border: 1px dashed #58a6ff; }
         .admin-badge { background: #ff9500; color: #0d1117; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px; }
+        .author-badge { background: #58a6ff; color: #0d1117; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<h1>🐈‍⬛ NekoTube (ねこすけ管理人版)</h1>
+<h1>🐈‍⬛ NekoTube (動画クリエイター共有版)</h1>
 
 <!-- 🔑 1. ログインエリア -->
 <div class="box" id="authArea">
-    <h3>👤 アカウント作成 / ログイン</h3>
+    <h3>👤 クリエーター登録 / ログイン</h3>
     <input type="text" id="usernameInput" placeholder="ユーザー名"><br>
     <input type="password" id="passwordInput" placeholder="パスワード"><br>
     <button onclick="handleAuth('login')">ログインする</button>
     
-    <!-- 💫 【改良！】作成ボタンの真上に案内メッセージを追加 -->
     <div class="alert-text">
-        📢 <strong>初めてこのサイトを使う人へ：</strong><br>
-        上の欄に好きな「ユーザー名」と「パスワード」を決めて入力してから、すぐ下の青いボタンを押してアカウントを作ってね！
+        📢 <strong>動画を投稿したいみんなへ：</strong><br>
+        ここから自分だけの「ユーザー名」と「パスワード」を作ってログインしてね！自分の名前で動画を何本でもアップロードできるようになるよ！
     </div>
     <button onclick="handleAuth('signup')" style="background:#007aff; width:100%;">新しくアカウントを作る</button>
 </div>
@@ -41,9 +41,10 @@
     <button onclick="userLogout()" style="background:#30363d; margin-left:10px;">ログアウト</button>
 </div>
 
-<!-- 🚀 2. 動画投稿フォーム -->
+<!-- 🚀 2. 動画投稿フォーム（ログインした人が誰でも使える） -->
 <div class="box" id="uploadFormSection" style="border: 1px solid #58a6ff;">
-    <h3>🚀 新しい動画をアップロードして共有する</h3>
+    <h3>🚀 新しい動画をチャンネルにアップロードする</h3>
+    <p style="font-size:12px; color:#8b949e; margin-top:-5px;">動画ファイルを直接選んで、あなたの名前でタイムラインに公開しよう！</p>
     
     <div class="form-group">
         <label style="font-weight:bold; color:#58a6ff;">① 動画の名前（タイトル）</label><br>
@@ -52,7 +53,7 @@
     
     <div class="form-group">
         <label style="font-weight:bold; color:#58a6ff;">② 動画の説明文</label><br>
-        <textarea id="vDesc" placeholder="動画の説明文を入力..." rows="3"></textarea>
+        <textarea id="vDesc" placeholder="動画の見どころや説明を入力..." rows="3"></textarea>
     </div>
     
     <div class="form-group">
@@ -60,13 +61,13 @@
         <input type="file" id="vFile" accept="video/*">
     </div>
     
-    <button onclick="addVideo()" id="uploadBtn" style="width:100%; font-size:16px; padding:12px;">🚀 サーバーにアップロードして投稿する！</button>
+    <button onclick="addVideo()" id="uploadBtn" style="width:100%; font-size:16px; padding:12px;">🚀 サーバーにアップロードして動画を投稿！</button>
     <p id="uploadStatus" style="color:#58a6ff; font-weight:bold; text-align:center; margin-top:10px;"></p>
 </div>
 
 <!-- 📺 3. みんなの動画一覧 -->
 <div class="box">
-    <h3>📺 みんなの動画一覧</h3>
+    <h3>📺 みんなが投稿した動画タイムライン</h3>
     <div id="timeline">動画を読み込み中...</div>
 </div>
 
@@ -119,7 +120,6 @@
         document.getElementById('userBadge').style.display = 'block';
         document.getElementById('currentUserName').innerHTML = loginUser;
         
-        // 👑 ログインした名前が「ねこすけ」なら管理者バッジを表示！
         var badge = document.getElementById('roleBadge');
         if(loginUser === "ねこすけ") {
             badge.innerHTML = '<span class="admin-badge">👑 最高管理者</span>';
@@ -161,7 +161,6 @@
 
             var generatedUrl = urlData.publicUrl;
 
-            // バグ完全排除
             const { error: dbError } = await _supabase.from('posts').insert([
                 { title: title, description: desc, url: generatedUrl, author: loginUser }
             ]);
@@ -194,11 +193,14 @@
             var video = videos[i];
             var commentHtml = (video.comments || []).map(c => `<div class="comment-item"><strong>${c.user}:</strong> ${c.text}</div>`).join('');
 
+            // 👑 投稿者が「ねこすけ」ならバッジをつける演出
+            var authorShow = video.author === 'ねこすけ' ? 'ねこすけ 👑' : video.author;
+
             var card = document.createElement('div');
             card.className = 'video-card';
             card.innerHTML = 
                 '<h2>' + video.title + '</h2>' +
-                '<p style="font-size:12px; color:#8b949e;">投稿者: ' + video.author + '</p>' +
+                '<p style="font-size:13px; color:#8b949e;">👤 投稿チャンネル: <span class="author-badge">' + authorShow + '</span></p>' +
                 '<video class="video-frame" src="' + video.url + '" controls onplay="countView(' + video.id + ', ' + video.views + ')"></video>' +
                 '<p>👁️ 視聴数: <span id="v-view-' + video.id + '">' + video.views + '</span> 回</p>' +
                 '<p style="background:#0d1117; padding:10px; border-radius:4px;">説明: ' + (video.description || '説明はありません') + '</p>' +
@@ -218,12 +220,3 @@
 
     async function addComment(id) {
         if(!loginUser) return alert('ログインしてください！');
-        var input = document.getElementById('c-input-' + id);
-        var text = input.value;
-        if(!text) return;
-
-        const { data } = await _supabase.from('posts').select('comments').eq('id', id).single();
-        var currentComments = data.comments || [];
-        currentComments.push({ user: loginUser, text: text });
-
-            
