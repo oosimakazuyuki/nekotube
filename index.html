@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ネコチューブ - 自動リフレッシュ・完全解決版</title>
+    <title>ネコチューブ - ねこすけ管理人エディション</title>
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }
         .box { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
@@ -13,11 +13,13 @@
         .video-frame { width: 100%; aspect-ratio: 16/9; background: black; border-radius: 4px; margin: 10px 0; }
         .comment-item { background: #161b22; padding: 5px 10px; margin-top: 5px; border-radius: 4px; font-size: 14px; }
         .form-group { margin-bottom: 15px; }
+        .alert-text { background: rgba(88, 166, 255, 0.1); color: #58a6ff; padding: 10px; border-radius: 6px; font-size: 13px; margin: 10px 0; border: 1px dashed #58a6ff; }
+        .admin-badge { background: #ff9500; color: #0d1117; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px; }
     </style>
 </head>
 <body>
 
-<h1>🐈‍⬛ NekoTube (自動リフレッシュ搭載・完全版)</h1>
+<h1>🐈‍⬛ NekoTube (ねこすけ管理人版)</h1>
 
 <!-- 🔑 1. ログインエリア -->
 <div class="box" id="authArea">
@@ -25,11 +27,17 @@
     <input type="text" id="usernameInput" placeholder="ユーザー名"><br>
     <input type="password" id="passwordInput" placeholder="パスワード"><br>
     <button onclick="handleAuth('login')">ログインする</button>
-    <button onclick="handleAuth('signup')" style="background:#007aff; margin-left:10px;">新しくアカウントを作る</button>
+    
+    <!-- 💫 【改良！】作成ボタンの真上に案内メッセージを追加 -->
+    <div class="alert-text">
+        📢 <strong>初めてこのサイトを使う人へ：</strong><br>
+        上の欄に好きな「ユーザー名」と「パスワード」を決めて入力してから、すぐ下の青いボタンを押してアカウントを作ってね！
+    </div>
+    <button onclick="handleAuth('signup')" style="background:#007aff; width:100%;">新しくアカウントを作る</button>
 </div>
 
 <div class="box" id="userBadge" style="display:none;">
-    👤 ログイン中: <strong id="currentUserName">ゲスト</strong>
+    👤 ログイン中: <strong id="currentUserName">ゲスト</strong><span id="roleBadge"></span>
     <button onclick="userLogout()" style="background:#30363d; margin-left:10px;">ログアウト</button>
 </div>
 
@@ -110,6 +118,14 @@
         document.getElementById('authArea').style.display = 'none';
         document.getElementById('userBadge').style.display = 'block';
         document.getElementById('currentUserName').innerHTML = loginUser;
+        
+        // 👑 ログインした名前が「ねこすけ」なら管理者バッジを表示！
+        var badge = document.getElementById('roleBadge');
+        if(loginUser === "ねこすけ") {
+            badge.innerHTML = '<span class="admin-badge">👑 最高管理者</span>';
+        } else {
+            badge.innerHTML = '';
+        }
     }
 
     // 動画を直接アップロード
@@ -121,7 +137,7 @@
 
         if(!title || fileInput.files.length === 0) return alert('タイトルと動画ファイルを選択してください！');
 
-        var file = fileInput.files[0]; // 単一ファイル取得のバグを修正
+        var file = fileInput.files[0]; // 単一ファイル取得
         var statusText = document.getElementById('uploadStatus');
         var btn = document.getElementById('uploadBtn');
 
@@ -145,7 +161,7 @@
 
             var generatedUrl = urlData.publicUrl;
 
-            // 波カッコのバグを完全に修正しました！
+            // バグ完全排除
             const { error: dbError } = await _supabase.from('posts').insert([
                 { title: title, description: desc, url: generatedUrl, author: loginUser }
             ]);
@@ -210,10 +226,4 @@
         var currentComments = data.comments || [];
         currentComments.push({ user: loginUser, text: text });
 
-        await _supabase.from('posts').update({ comments: currentComments }).eq('id', id);
-        input.value = '';
-        showVideos();
-    }
-</script>
-</body>
-</html>
+            
