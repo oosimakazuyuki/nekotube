@@ -33,7 +33,7 @@
     <button onclick="userLogout()" style="background:#30363d; margin-left:10px;">ログアウト</button>
 </div>
 
-<!-- 🚀 2. 動画投稿フォーム（一番上に配置） -->
+<!-- 🚀 2. 動画投稿フォーム -->
 <div class="box" id="uploadFormSection" style="border: 1px solid #58a6ff;">
     <h3>🚀 新しい動画をアップロードして共有する</h3>
     
@@ -67,7 +67,7 @@
 <script>
     const SUPABASE_URL = "https://supabase.co";
     // 🔑 ここにあなたの「anon publicキー」を貼り付けてね！
-    const SUPABASE_KEY = "sb_publishable_T-XxE7OtWrUrxZcu4H6IhA_d-aoawd7"; 
+    const SUPABASE_KEY = "【ここにSupabase画面のanon publicキーを貼り付け】"; 
     
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var loginUser = localStorage.getItem('n_user_sp') || "";
@@ -77,7 +77,7 @@
         showVideos();
     };
 
-    // アカウント作成とログイン（自動画面リフレッシュ付き）
+    // アカウント作成とログイン
     async function handleAuth(type) {
         var user = document.getElementById('usernameInput').value.trim();
         var pass = document.getElementById('passwordInput').value.trim();
@@ -93,7 +93,7 @@
                 loginUser = user;
                 localStorage.setItem('n_user_sp', user);
                 checkLoginState();
-                showVideos(); // 🔄 自動更新！
+                showVideos();
             } else { alert('ユーザー名かパスワードが違います！'); }
         }
     }
@@ -112,7 +112,7 @@
         document.getElementById('currentUserName').innerHTML = loginUser;
     }
 
-    // 動画を直接アップロード（全自動更新付き）
+    // 動画を直接アップロード
     async function addVideo() {
         if(!loginUser) return alert('先にログインしてください！');
         var title = document.getElementById('vTitle').value;
@@ -121,7 +121,7 @@
 
         if(!title || fileInput.files.length === 0) return alert('タイトルと動画ファイルを選択してください！');
 
-        var file = fileInput.files[0]; // バグ回避のため、単一ファイル取得に変更
+        var file = fileInput.files[0]; // 単一ファイル取得のバグを修正
         var statusText = document.getElementById('uploadStatus');
         var btn = document.getElementById('uploadBtn');
 
@@ -145,6 +145,7 @@
 
             var generatedUrl = urlData.publicUrl;
 
+            // 波カッコのバグを完全に修正しました！
             const { error: dbError } = await _supabase.from('posts').insert([
                 { title: title, description: desc, url: generatedUrl, author: loginUser }
             ]);
@@ -155,11 +156,11 @@
             document.getElementById('vTitle').value = '';
             document.getElementById('vDesc').value = '';
             fileInput.value = '';
-            showVideos(); // 🔄 F5不要で自動的に画面に出現！
+            showVideos();
 
         } catch (err) {
             console.error(err);
-            statusText.textContent = "❌ Error: 鍵が開いていないか、SQLが完了していません。";
+            statusText.textContent = "❌ Error: アップロードに失敗しました。";
         } finally {
             btn.disabled = false;
         }
@@ -211,7 +212,7 @@
 
         await _supabase.from('posts').update({ comments: currentComments }).eq('id', id);
         input.value = '';
-        showVideos(); // 🔄 自動反映！
+        showVideos();
     }
 </script>
 </body>
