@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ネコチューブ - 本物動画アップロード対応・最終完全版</title>
+    <title>ネコチューブ - 自動リフレッシュ・完全解決版</title>
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }
         .box { background-color: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
@@ -17,9 +17,9 @@
 </head>
 <body>
 
-<h1>🐈‍⬛ NekoTube (動画アップロード・プロキシ完全版)</h1>
+<h1>🐈‍⬛ NekoTube (自動リフレッシュ搭載・完全版)</h1>
 
-<!-- 🔑 1. ログイン・サインアップエリア -->
+<!-- 🔑 1. ログインエリア -->
 <div class="box" id="authArea">
     <h3>👤 アカウント作成 / ログイン</h3>
     <input type="text" id="usernameInput" placeholder="ユーザー名"><br>
@@ -33,7 +33,7 @@
     <button onclick="userLogout()" style="background:#30363d; margin-left:10px;">ログアウト</button>
 </div>
 
-<!-- 🚀 2. 【大進化！】URL不要、ファイルを直接選んで投稿する画面 -->
+<!-- 🚀 2. 動画投稿フォーム（一番上に配置） -->
 <div class="box" id="uploadFormSection" style="border: 1px solid #58a6ff;">
     <h3>🚀 新しい動画をアップロードして共有する</h3>
     
@@ -49,7 +49,6 @@
     
     <div class="form-group">
         <label style="font-weight:bold; color:#58a6ff;">③ 動画ファイルを選択（mp4など）</label><br>
-        <p style="font-size:12px; color:#8b949e; margin:0 0 5px 0;">※端末内の動画ファイルを直接選んでね！</p>
         <input type="file" id="vFile" accept="video/*">
     </div>
     
@@ -57,7 +56,7 @@
     <p id="uploadStatus" style="color:#58a6ff; font-weight:bold; text-align:center; margin-top:10px;"></p>
 </div>
 
-<!-- 📺 3. みんなの動画一覧（タイムライン） -->
+<!-- 📺 3. みんなの動画一覧 -->
 <div class="box">
     <h3>📺 みんなの動画一覧</h3>
     <div id="timeline">動画を読み込み中...</div>
@@ -67,8 +66,8 @@
 <script src="https://jsdelivr.net"></script>
 <script>
     const SUPABASE_URL = "https://supabase.co";
-    // 🔑 さっきコピーした「公開キー（anon public）」を下の "" の中に貼り付け！
-    const SUPABASE_KEY = "【ここにSupabase画面のanon publicキーを貼り付け】"; 
+    // 🔑 ここにあなたの「anon publicキー」を貼り付けてね！
+    const SUPABASE_KEY = "sb_publishable_T-XxE7OtWrUrxZcu4H6IhA_d-aoawd7"; 
     
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var loginUser = localStorage.getItem('n_user_sp') || "";
@@ -78,7 +77,7 @@
         showVideos();
     };
 
-    // アカウント作成とログインの処理
+    // アカウント作成とログイン（自動画面リフレッシュ付き）
     async function handleAuth(type) {
         var user = document.getElementById('usernameInput').value.trim();
         var pass = document.getElementById('passwordInput').value.trim();
@@ -86,7 +85,7 @@
 
         if(type === 'signup') {
             const { error } = await _supabase.from('users').insert([{ username: user, password: pass }]);
-            if(error) { alert('このユーザー名は既に使われているか、エラーが発生しました'); }
+            if(error) { alert('エラー：このユーザー名は既に使われているか、テーブルが作成されていません。'); }
             else { alert('🎉 アカウント作成成功！ログインしてください！'); }
         } else {
             const { data, error } = await _supabase.from('users').select('*').eq('username', user).eq('password', pass);
@@ -94,7 +93,7 @@
                 loginUser = user;
                 localStorage.setItem('n_user_sp', user);
                 checkLoginState();
-                showVideos();
+                showVideos(); // 🔄 自動更新！
             } else { alert('ユーザー名かパスワードが違います！'); }
         }
     }
@@ -104,6 +103,7 @@
         localStorage.removeItem('n_user_sp');
         document.getElementById('userBadge').style.display = 'none';
         document.getElementById('authArea').style.display = 'block';
+        showVideos();
     }
 
     function checkLoginState() {
@@ -112,7 +112,7 @@
         document.getElementById('currentUserName').innerHTML = loginUser;
     }
 
-    // 動画を直接アップロードして投稿する最強の機能
+    // 動画を直接アップロード（全自動更新付き）
     async function addVideo() {
         if(!loginUser) return alert('先にログインしてください！');
         var title = document.getElementById('vTitle').value;
@@ -121,7 +121,7 @@
 
         if(!title || fileInput.files.length === 0) return alert('タイトルと動画ファイルを選択してください！');
 
-        var file = fileInput.files[0];
+        var file = fileInput.files[0]; // バグ回避のため、単一ファイル取得に変更
         var statusText = document.getElementById('uploadStatus');
         var btn = document.getElementById('uploadBtn');
 
@@ -129,10 +129,9 @@
         btn.disabled = true;
 
         try {
-            // 📂 1. SupabaseのStorageフォルダ（videos）に動画を直接アップロード
             var fileExt = file.name.split('.').pop();
             var fileName = Date.now() + '.' + fileExt;
-            var filePath = 'public/' + fileName;
+            var filePath = fileName;
 
             const { data: uploadData, error: uploadError } = await _supabase.storage
                 .from('videos')
@@ -140,14 +139,12 @@
 
             if (uploadError) throw uploadError;
 
-            // 🔗 2. アップロードした動画の公開リンク（URL）を自動取得
             const { data: urlData } = _supabase.storage
                 .from('videos')
                 .getPublicUrl(filePath);
 
             var generatedUrl = urlData.publicUrl;
 
-            // 📝 3. データベースに情報を書き込む
             const { error: dbError } = await _supabase.from('posts').insert([
                 { title: title, description: desc, url: generatedUrl, author: loginUser }
             ]);
@@ -158,17 +155,17 @@
             document.getElementById('vTitle').value = '';
             document.getElementById('vDesc').value = '';
             fileInput.value = '';
-            showVideos();
+            showVideos(); // 🔄 F5不要で自動的に画面に出現！
 
         } catch (err) {
             console.error(err);
-            statusText.textContent = "❌ アップロードに失敗。SupabaseのStorage設定が必要です。";
+            statusText.textContent = "❌ Error: 鍵が開いていないか、SQLが完了していません。";
         } finally {
             btn.disabled = false;
         }
     }
 
-    // データベースから全員の動画を読み込んで表示
+    // タイムライン読み込み
     async function showVideos() {
         var timeline = document.getElementById('timeline');
         const { data: videos, error } = await _supabase.from('posts').select('*').order('created_at', { ascending: false });
@@ -197,13 +194,11 @@
         }
     }
 
-    // 視聴数の更新
     async function countView(id, currentViews) {
         await _supabase.from('posts').update({ views: currentViews + 1 }).eq('id', id);
         document.getElementById('v-view-' + id).innerHTML = currentViews + 1;
     }
 
-    // コメントの保存
     async function addComment(id) {
         if(!loginUser) return alert('ログインしてください！');
         var input = document.getElementById('c-input-' + id);
@@ -216,7 +211,7 @@
 
         await _supabase.from('posts').update({ comments: currentComments }).eq('id', id);
         input.value = '';
-        showVideos();
+        showVideos(); // 🔄 自動反映！
     }
 </script>
 </body>
